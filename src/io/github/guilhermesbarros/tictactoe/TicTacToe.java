@@ -22,6 +22,7 @@ public class TicTacToe {
         var scanner = new Scanner(System.in);
         var currentPlayer = 'X';
         var gameOver = false;
+        var hasWinner = false;
 
         while (!gameOver) {
             drawBoard();
@@ -42,16 +43,13 @@ public class TicTacToe {
                 var cell = Cell.getCell(cellChosen[0] - 1, cellChosen[1] - 1);
 
                 mark(cell, currentPlayer);
+                hasWinner = checkIfHasWinner(currentPlayer);
 
-                if (hasWinner(currentPlayer)) {
-                    drawBoard();
-
-                    System.out.println("  GAME OVER ");
-                    System.out.printf(" \"%s\" venceu!", currentPlayer);
+                if (hasWinner || board.size() >= 9) {
                     gameOver = true;
+                } else {
+                    currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
                 }
-
-                currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
             } catch (NumberFormatException exception) {
                 System.out.println("Insira apenas números inteiros");
             } catch (IllegalArgumentException exception) {
@@ -60,6 +58,17 @@ public class TicTacToe {
                 System.out.println("Célula inválida");
             }
         }
+
+        drawBoard();
+        System.out.println("  GAME OVER ");
+
+        if (hasWinner) {
+            System.out.printf(" \"%s\" venceu!", currentPlayer);
+        } else {
+            System.out.println("   Empatou ");
+        }
+
+        scanner.close();
     }
 
     public void drawBoard() {
@@ -95,7 +104,7 @@ public class TicTacToe {
         board.put(cell, symbol);
     }
 
-    public boolean hasWinner(char symbol) {
+    public boolean checkIfHasWinner(char symbol) {
         return WIN_PLAYS.stream().anyMatch(
                 combo -> combo.stream().allMatch(
                         cell -> board.getOrDefault(cell, ' ') == symbol));
