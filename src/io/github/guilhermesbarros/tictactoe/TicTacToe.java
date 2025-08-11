@@ -1,11 +1,13 @@
 package io.github.guilhermesbarros.tictactoe;
 
+import io.github.guilhermesbarros.tictactoe.exceptions.Either;
+import io.github.guilhermesbarros.tictactoe.exceptions.Left;
+import io.github.guilhermesbarros.tictactoe.exceptions.Right;
 import io.github.guilhermesbarros.tictactoe.utils.ClearConsole;
 
 import java.util.*;
 
 public class TicTacToe {
-
     private static final List<List<Cell>> WIN_PLAYS =
             List.of(List.of(Cell.A1, Cell.A2, Cell.A3),
                     List.of(Cell.B1, Cell.B2, Cell.B3),
@@ -26,36 +28,45 @@ public class TicTacToe {
 
         while (!gameOver) {
             drawBoard();
-
             System.out.printf("Vez do jogador \"%s\"\n", currentPlayer);
             System.out.print(
                     "Escolha uma célula (linha [1-3], coluna [1-3]): ");
 
-            var response = scanner.nextLine();
-
+            var input = scanner.nextLine();
             ClearConsole.execute();
 
-            try {
-                var cellChosen =
-                        Arrays.stream(response.replaceAll("\\s", "").split(","))
-                              .mapToInt(Integer::parseInt).toArray();
+            Either<String, int[]> validateInputResult = validateInput(input);
 
-                var cell = Cell.getCell(cellChosen[0] - 1, cellChosen[1] - 1);
+            if (validateInputResult.isLeft()) {
+                System.out.println(validateInputResult.getLeft());
+                continue;
+            }
 
-                mark(cell, currentPlayer);
-                hasWinner = checkIfHasWinner(currentPlayer);
+            int[] cellChosen = validateInputResult.getRight();
 
-                if (hasWinner || board.size() >= 9) {
-                    gameOver = true;
-                } else {
-                    currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
-                }
-            } catch (NumberFormatException exception) {
-                System.out.println("Insira apenas números inteiros");
-            } catch (IllegalArgumentException exception) {
-                System.out.println(exception.getMessage());
-            } catch (ArrayIndexOutOfBoundsException exception) {
-                System.out.println("Célula inválida");
+            Either<String, Cell> getCellResult =
+                    Cell.getCell(cellChosen[0] - 1, cellChosen[1] - 1);
+
+            if (getCellResult.isLeft()) {
+                System.out.println(getCellResult.getLeft());
+                continue;
+            }
+
+            Cell cell = getCellResult.getRight();
+
+            Either<String, Character> markResult = mark(cell, currentPlayer);
+
+            if (markResult.isLeft()) {
+                System.out.println(markResult.getLeft());
+                continue;
+            }
+
+            hasWinner = checkIfHasWinner(currentPlayer);
+
+            if (hasWinner || board.size() >= 9) {
+                gameOver = true;
+            } else {
+                currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
             }
         }
 
@@ -71,14 +82,14 @@ public class TicTacToe {
         scanner.close();
     }
 
-    public void drawBoard() {
+    private void drawBoard() {
         System.out.println(" TIC TAC TOE ");
 
         for (int row = 0; row < 3; row++) {
             System.out.print(" ");
 
             for (int col = 0; col < 3; col++) {
-                Cell cell = Cell.getCell(row, col);
+                Cell cell = Cell.getCell(row, col).getRight();
                 char symbol = board.getOrDefault(cell, ' ');
 
                 System.out.print(" " + symbol + " ");
@@ -96,17 +107,33 @@ public class TicTacToe {
         }
     }
 
-    public void mark(Cell cell, char symbol) {
-        if (board.containsKey(cell)) {
-            throw new IllegalArgumentException("Posição já ocupada!");
-        }
+    private Either<String, int[]> validateInput(String input) {
+        try {
+            var cellChosen =
+                    Arrays.stream(input.replaceAll("\\s", "").split(","))
+                          .mapToInt(Integer::parseInt).toArray();
 
-        board.put(cell, symbol);
+            if (cellChosen.length != 2) {
+                return new Left<>(
+                        "Insira 2 números separados por vírgula, sendo linha e coluna, respectivamente");
+            }
+
+            return new Right<>(cellChosen);
+        } catch (NumberFormatException exception) {
+            return new Left<>("Insira apenas números inteiros");
+        }
     }
 
-    public boolean checkIfHasWinner(char symbol) {
-        return WIN_PLAYS.stream().anyMatch(
-                combo -> combo.stream().allMatch(
-                        cell -> board.getOrDefault(cell, ' ') == symbol));
+    private Either<String, Character> mark(Cell cell, char symbol) {
+        if (board.containsKey(cell)) {
+            return new Left<>("Posição já ocupada!");
+        }
+
+        return new Right<>(board.put(cell, symbol));
+    }
+
+    private boolean checkIfHasWinner(char symbol) {
+        return WIN_PLAYS.stream().anyMatch(combo -> combo.stream().allMatch(
+                cell -> board.getOrDefault(cell, ' ') == symbol));
     }
 }

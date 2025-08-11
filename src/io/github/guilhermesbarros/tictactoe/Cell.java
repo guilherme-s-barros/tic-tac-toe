@@ -1,5 +1,9 @@
 package io.github.guilhermesbarros.tictactoe;
 
+import io.github.guilhermesbarros.tictactoe.exceptions.Either;
+import io.github.guilhermesbarros.tictactoe.exceptions.Left;
+import io.github.guilhermesbarros.tictactoe.exceptions.Right;
+
 public enum Cell {
     A1(0, 0), A2(0, 1), A3(0, 2),
     B1(1, 0), B2(1, 1), B3(1, 2),
@@ -13,14 +17,14 @@ public enum Cell {
         this.col = col;
     }
 
-    public static Cell getCell(int row, int col)
-            throws IllegalArgumentException {
+    public static Either<String, Cell> getCell(int row,
+                                               int col) {
         for (Cell p : Cell.values()) {
             if (p.row == row && p.col == col) {
-                return p;
+                return new Right<>(p);
             }
         }
 
-        throw new IllegalArgumentException("Célula inválida");
+        return new Left<>("Célula inválida");
     }
 }
